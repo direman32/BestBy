@@ -1,0 +1,3 @@
+include ':api-common-java-master'
+include ':app'
+rootProject.name = "BestBy"

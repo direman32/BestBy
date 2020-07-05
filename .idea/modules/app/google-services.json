@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "560779229162",
+    "firebase_url": "https://bestby-d7833.firebaseio.com",
+    "project_id": "bestby-d7833",
+    "storage_bucket": "bestby-d7833.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560779229162:android:8fa4521ac331dab4b82493",
+        "android_client_info": {
+          "package_name": "com.example.bestby"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "560779229162-4mgrug5ffpgnli0etep594oalgihr1sh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bestby",
+            "certificate_hash": "4dd2e8d86af5194db2c322a6ff0344c883a9df96"
+          }
+        },
+        {
+          "client_id": "560779229162-fdurk407nimd7l5f50jdcanaptvd99js.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYJFbBRQXUMeUnr-7GK1EyX0JvRIoTSbs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "560779229162-fdurk407nimd7l5f50jdcanaptvd99js.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
