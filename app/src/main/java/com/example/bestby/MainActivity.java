@@ -28,6 +28,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 
 import android.view.Menu;
@@ -100,7 +102,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void ShowProducts() {
-
         FirebaseFirestore.getInstance()
                 .collection("users/" + userID + "/products")
                 .get()
@@ -161,5 +162,25 @@ public class MainActivity extends AppCompatActivity {
                     myListOfDocuments.set(j+1, tempDoc);
                 }
         return myListOfDocuments;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event)  {
+        if (Integer.parseInt(android.os.Build.VERSION.SDK) < 5
+                && keyCode == KeyEvent.KEYCODE_BACK
+                && event.getRepeatCount() == 0) {
+            Log.d("CDA", "onKeyDown Called");
+            onBackPressed();
+        }
+
+        return super.onKeyDown(keyCode, event);
+    }
+    @Override
+    public void onBackPressed() {
+        Log.d("CDA", "onBackPressed Called");
+        //TODO add in are you sure you want to logout?
+//        Intent intent = new Intent(getApplicationContext(), Login.class);
+//        intent.putExtra("logOut", true);
+//        startActivity(intent);
     }
 }

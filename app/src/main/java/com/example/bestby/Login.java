@@ -38,6 +38,10 @@ public class Login extends AppCompatActivity {
         NeedRegister    = findViewById(R.id.NeedToRegister);
         fAuth           = FirebaseAuth.getInstance();
 
+        if(getIntent().getBooleanExtra("logOut", false)) {
+            fAuth.signOut();
+        }
+
         if(fAuth.getCurrentUser() != null) {
             startActivity(new Intent(getApplicationContext(), MainActivity.class));
             finish();
