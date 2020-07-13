@@ -34,6 +34,7 @@ import android.view.View;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -94,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(getApplicationContext(), AddProduct.class);
         intent.putExtra("userID",userID);
         startActivity(intent);
-        finish();
+        //finish();
     }
 
     public void WriteProduct(String Product) {
@@ -117,7 +118,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
-        }
+    }
+
     public void FillListView(List<DocumentSnapshot> myListOfDocuments) {
         List<String> documentDetails = new ArrayList<>();
 
@@ -129,12 +131,24 @@ public class MainActivity extends AppCompatActivity {
                 R.layout.list_item,
                 documentDetails);
 
+
         myListOfDocuments = SortByDate(myListOfDocuments);
         for(int i = 0; i < myListOfDocuments.size(); i++) {
             documentDetails.add(String.format("%-17s %s", myListOfDocuments.get(i).get("product").toString().trim(),
                     myListOfDocuments.get(i).get("expiryDateDisplay").toString().trim()));
         }
         productsView.setAdapter(arrayAdapter);
+
+        productsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                Intent intent = new Intent(getApplicationContext(), ItemEdit.class);
+                intent.putExtra("userID", userID);
+                intent.putExtra("productPosition", position);
+                startActivity(intent);
+            }
+        });
     }
 
     public List<DocumentSnapshot> SortByDate(List<DocumentSnapshot> myListOfDocuments) {

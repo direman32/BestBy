@@ -6,11 +6,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.gms.tasks.OnFailureListener;
@@ -57,7 +59,7 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
 
     @Override
     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-        String date = "Expiry Date: " + dayOfMonth + "/" + month + "/" + year;
+        String date = "Expiry Date: " + dayOfMonth + "/" + (month + 1) + "/" + year;
         dateText.setText(date);
     }
 
@@ -73,7 +75,22 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
         return dateText.getText().toString();
     }
 
-    public void AddProductToDataBaseSuccessful(View view) {
+    public void addProductChecks(View view) {
+        String productName = product.getText().toString().trim();
+        String date = dateText.getText().toString().trim();
+
+        if(TextUtils.isEmpty(productName)) {
+            product.setError("Product Name Required");
+            return;
+        }
+        if(TextUtils.isEmpty(date) || date.equals("Date Required!")) {
+            dateText.setText("Date Required!");
+            return;
+        }
+        AddProductToDataBaseSuccessful();
+    }
+
+    public void AddProductToDataBaseSuccessful() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         Map<String, Object> user = new HashMap<>();
         int day =  dialog.getDatePicker().getDayOfMonth();
@@ -117,7 +134,7 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
         finish();
     }
 
-    @Override
+    /*@Override
     public boolean onKeyDown(int keyCode, KeyEvent event)  {
         if (Integer.parseInt(android.os.Build.VERSION.SDK) < 5
                 && keyCode == KeyEvent.KEYCODE_BACK
@@ -128,6 +145,7 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
 
         return super.onKeyDown(keyCode, event);
     }
+
     @Override
     public void onBackPressed() {
         Log.d("CDA", "onBackPressed Called");
@@ -135,5 +153,5 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
         //setIntent.addCategory(Intent.CATEGORY_HOME);
         //setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(new Intent(getApplicationContext(), MainActivity.class));
-    }
+    }*/
 }
