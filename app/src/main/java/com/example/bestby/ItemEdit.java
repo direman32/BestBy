@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
@@ -22,7 +23,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ItemEdit extends AppCompatActivity {
 
@@ -61,8 +64,39 @@ public class ItemEdit extends AppCompatActivity {
     }
 
     public void RemoveProduct(View view) {
-        FirebaseFirestore.getInstance().collection("users/" + userID + "/products").document(documentID)
-                .delete();
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users/" + userID + "/products").document(documentID)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    if (document.exists()) {
+                        Map<String, Object> map = document.getData();
+                        db.collection("users/" + userID +"/removedProducts")
+                                .add(map)
+                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                                    @Override
+                                    public void onSuccess(DocumentReference documentReference) {
+                                        db.collection("users/" + userID + "/products").document(documentID)
+                                                .delete();
+                                        System.out.println("DocumentSnapshot added with ID: " + documentReference.getId());
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        System.out.println("Error adding document: "+ e.getMessage());
+                                    }
+                                });
+                    }
+                } else {
+                    Log.d("Document Ref", "get failed with ", task.getException());
+                }
+            }
+        });
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         intent.putExtra("RemovedItem", true);
         startActivity(intent);

@@ -53,9 +53,7 @@ import javax.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity {
 
-    private StorageReference mStorageRef;
     TextView shopName;
-    TextView numberOfProducts;
     ListView productsView;
     FirebaseAuth fAuth;
     FirebaseFirestore fStore;
@@ -67,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         shopName = findViewById(R.id.ShopName);
-        numberOfProducts = findViewById(R.id.ShowProduct0);
         productsView = findViewById(R.id.productsView);
 
         fAuth = FirebaseAuth.getInstance();
@@ -98,6 +95,13 @@ public class MainActivity extends AppCompatActivity {
         //finish();
     }
 
+    public void RemovedProductsPage(View view) {
+        Intent intent = new Intent(getApplicationContext(), RemovedProducts.class);
+        intent.putExtra("userID",userID);
+        startActivity(intent);
+        //finish();
+    }
+
     public void WriteProduct(String Product) {
         getFilesDir();
     }
@@ -111,9 +115,6 @@ public class MainActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
                             List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
-                            String number = myListOfDocuments.size() + ": Dates saved";
-                            numberOfProducts = findViewById(R.id.ShowProduct0);
-                            numberOfProducts.setText(number);
                             FillListView(myListOfDocuments);
                         }
                     }
