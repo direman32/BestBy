@@ -39,9 +39,9 @@ public class RemoveItemDialog extends Dialog implements
     public Button yes, no;
     public TextView message;
     public TextView numberRemoved;
-    String userID;
-    int productPosition;
-    String documentID;
+    private String userID;
+    private int productPosition;
+    private String documentID;
 
 
     public RemoveItemDialog() {
@@ -103,7 +103,7 @@ public class RemoveItemDialog extends Dialog implements
                             List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
                             myListOfDocuments = SortByDate(myListOfDocuments);
                             documentID = myListOfDocuments.get(productPosition).getId();
-                            message.setText("How many " + myListOfDocuments.get(productPosition).getString("product") + "(s) do you want to remove?");
+                            message.setText("How many " + myListOfDocuments.get(productPosition).getString(staticValues.PRODUCT_NAME_KEY) + "(s) do you want to remove?");
                         }
                     }
                 });
@@ -152,7 +152,7 @@ public class RemoveItemDialog extends Dialog implements
         ArrayList<Date> dates = new ArrayList<>();
         for(int i = 0; i < myListOfDocuments.size(); i++) {
             try {
-                dates.add(format.parse((String) myListOfDocuments.get(i).get("expiryDateDisplay")));
+                dates.add(format.parse((String) myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY)));
             } catch (ParseException e) {
                 e.printStackTrace();
             }

@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Register extends AppCompatActivity {
-    EditText mEmail, mShop, mPassword, mConfirmPassword;
-    Button registerButton;
-    FirebaseAuth fAuth;
-    FirebaseFirestore fStore;
-    ProgressBar progressBar;
-    String userID;
+    private EditText mEmail, mShop, mPassword, mConfirmPassword;
+    private Button registerButton;
+    private FirebaseAuth fAuth;
+    private FirebaseFirestore fStore;
+    private ProgressBar progressBar;
+    private String userID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

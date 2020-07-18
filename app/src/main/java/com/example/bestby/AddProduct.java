@@ -3,7 +3,9 @@ package com.example.bestby;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -11,9 +13,11 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -27,10 +31,10 @@ import java.util.Map;
 
 public class AddProduct extends AppCompatActivity implements DatePickerDialog.OnDateSetListener {
 
-    TextView product;
-    TextView dateText;
-    DatePickerDialog dialog;
-    String userID;
+    private TextView product;
+    private TextView dateText;
+    private DatePickerDialog dialog;
+    private String userID;
 
 
     @Override
@@ -45,6 +49,7 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
     }
 
     public void ChooseDate(View view) {
+        hideSoftKeyboard(AddProduct.this, view);
         DatePickerDialog datePickerDialog = new DatePickerDialog(this,
                 this,
                 Calendar.getInstance().get(Calendar.YEAR),
@@ -52,14 +57,11 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
                 Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
         datePickerDialog.show();
         dialog = datePickerDialog;
-
-//        DateDialog dateDialog = new DateDialog();
-//        dateDialog.show(getSupportFragmentManager(), "date dialog");
     }
 
     @Override
     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-        String date = "Expiry Date: " + dayOfMonth + "/" + (month + 1) + "/" + year;
+        String date = "Expiry Date: " + dayOfMonth + "-" + (month + 1) + "-" + year;
         dateText.setText(date);
     }
 
@@ -108,9 +110,9 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
 
         calendar.setTimeInMillis(timestamp);
         String date = DateFormat.format("dd-MM-yyyy", calendar).toString();
-        user.put("product", product.getText().toString().trim());
-        user.put("expiryDate", timestamp);
-        user.put("expiryDateDisplay", date);
+        user.put(staticValues.PRODUCT_NAME_KEY, product.getText().toString().trim());
+        user.put(staticValues.PRODUCT_DATE_KEY, timestamp);
+        user.put(staticValues.PRODUCT_DATE_DISPLAY_KEY, date);
 
         // Add a new document with a generated ID
         db.collection("users/" + userID +"/products")
@@ -118,7 +120,8 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
-                        System.out.println("DocumentSnapshot added with ID: " + documentReference.getId());
+                        Toast.makeText(AddProduct.this, "Product Added Successfully",
+                                Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -129,29 +132,13 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
                 });
 
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        //intent.putExtra("Date",convertDate(day,month,year));
         startActivity(intent);
         finish();
     }
 
-    /*@Override
-    public boolean onKeyDown(int keyCode, KeyEvent event)  {
-        if (Integer.parseInt(android.os.Build.VERSION.SDK) < 5
-                && keyCode == KeyEvent.KEYCODE_BACK
-                && event.getRepeatCount() == 0) {
-            Log.d("CDA", "onKeyDown Called");
-            onBackPressed();
-        }
-
-        return super.onKeyDown(keyCode, event);
+    public static void hideSoftKeyboard (Activity activity, View view)
+    {
+        InputMethodManager imm = (InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
     }
-
-    @Override
-    public void onBackPressed() {
-        Log.d("CDA", "onBackPressed Called");
-        //Intent setIntent = new Intent(Intent.ACTION_MAIN);
-        //setIntent.addCategory(Intent.CATEGORY_HOME);
-        //setIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(new Intent(getApplicationContext(), MainActivity.class));
-    }*/
 }

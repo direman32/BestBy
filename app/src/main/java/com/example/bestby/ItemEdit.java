@@ -2,7 +2,11 @@ package com.example.bestby;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
+import android.app.Activity;
+import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -10,7 +14,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -21,20 +30,29 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ItemEdit extends AppCompatActivity {
+public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
 
-    String userID;
-    int productPosition;
-    String documentID;
-    TextView productName;
+    private String userID;
+    private int productPosition;
+    private String documentID;
+    private EditText productName;
+    private TextView dateText;
+    private String originalName;
+    private String originalDate;
+    private long originalTimeStamp;
+    private long newTimeStamp;
+    private Calendar calendar;
+    private String newDateDisplay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +60,29 @@ public class ItemEdit extends AppCompatActivity {
         setContentView(R.layout.activity_item_edit);
 
         productName = findViewById(R.id.editProductName);
+        dateText = findViewById(R.id.editDate);
+        productName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if(!hasFocus) {
+                    if(!productName.getText().toString().equals(originalName))
+                        productName.setTextColor(Color.RED);
+                    else
+                        productName.setTextColor(Color.BLACK);
+                }
+            }
+        });
+        productName.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                boolean handled = false;
+                if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                    clearFocus(v);
+                    handled = true;
+                }
+                return handled;
+            }
+        });
 
         userID = getIntent().getStringExtra("userID");
         productPosition = getIntent().getIntExtra("productPosition", -1);
@@ -59,16 +100,48 @@ public class ItemEdit extends AppCompatActivity {
                             List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
                             myListOfDocuments = SortByDate(myListOfDocuments);
                             documentID = myListOfDocuments.get(productPosition).getId();
-                            productName.setText(myListOfDocuments.get(productPosition).getString("product"));
+                            productName.setText(myListOfDocuments.get(productPosition).getString(staticValues.PRODUCT_NAME_KEY));
+                            originalName = productName.getText().toString();
+                            originalDate = myListOfDocuments.get(productPosition).getString(staticValues.PRODUCT_DATE_DISPLAY_KEY);
+                            dateText.setText("Expiry Date: " + originalDate);
+                            originalTimeStamp = myListOfDocuments.get(productPosition).getLong(staticValues.PRODUCT_DATE_KEY);
                         }
                     }
                 });
     }
 
     public void RemoveItemDialog(View view) {
+        clearFocus(view);
         RemoveItemDialog rid = new RemoveItemDialog(ItemEdit.this, userID, productPosition);
         rid.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         rid.show();
+    }
+
+    public void Update(View view) {
+        clearFocus(view);
+        if(productName.getText().toString().equals(originalName) && (originalDate.equals(newDateDisplay) || newDateDisplay == null)) {
+            Toast.makeText(ItemEdit.this, "Nothing has been changed",
+                    Toast.LENGTH_SHORT).show();
+        }
+        else {
+            if(newDateDisplay == null) {
+                newDateDisplay = originalDate;
+                newTimeStamp = originalTimeStamp;
+            }
+            DocumentReference contact = FirebaseFirestore.getInstance().collection("users/" + userID + "/products").document(documentID);
+            contact.update(staticValues.PRODUCT_NAME_KEY, productName.getText().toString().trim());
+            contact.update(staticValues.PRODUCT_DATE_KEY, newTimeStamp);
+            contact.update(staticValues.PRODUCT_DATE_DISPLAY_KEY, newDateDisplay)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Toast.makeText(ItemEdit.this, "Updated Successfully",
+                                    Toast.LENGTH_SHORT).show();
+                            finish();
+                            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                        }
+                    });
+        }
     }
 
     //TODO Add to a java class so it is not a duplicate method. also in main activity
@@ -77,7 +150,7 @@ public class ItemEdit extends AppCompatActivity {
         ArrayList<Date> dates = new ArrayList<>();
         for(int i = 0; i < myListOfDocuments.size(); i++) {
             try {
-                dates.add(format.parse((String) myListOfDocuments.get(i).get("expiryDateDisplay")));
+                dates.add(format.parse((String) myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY)));
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -99,6 +172,38 @@ public class ItemEdit extends AppCompatActivity {
         return myListOfDocuments;
     }
 
+    @Override
+    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+        if(month+1 < 10)
+            newDateDisplay= dayOfMonth + "-0" + (month + 1) + "-" + year;
+        else
+            newDateDisplay= dayOfMonth + "-" + (month + 1) + "-" + year;
+        String date = "Expiry Date: " + newDateDisplay;
+        if(!(newDateDisplay).equals(originalDate) && !newDateDisplay.equals(""))
+            dateText.setTextColor(Color.RED);
+        else
+            dateText.setTextColor(Color.BLACK);
+        dateText.setText(date);
+        DateFormat format = new SimpleDateFormat("dd-mm-yyyy");
+        try {
+            Date dateTime = format.parse(newDateDisplay);
+            newTimeStamp = dateTime.getTime();
+        } catch (ParseException e) {
+            Log.e("log", e.getMessage(), e);
+        }
+    }
+
+    public void EditDate(View view) {
+        clearFocus(view);
+        calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(originalTimeStamp);
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                this,
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
+    }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)  {
@@ -116,5 +221,16 @@ public class ItemEdit extends AppCompatActivity {
     public void onBackPressed() {
         Log.d("CDA", "onBackPressed Called");
         startActivity(new Intent(getApplicationContext(), MainActivity.class));
+    }
+
+    public static void hideSoftKeyboard (Activity activity, View view)
+    {
+        InputMethodManager imm = (InputMethodManager)activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getApplicationWindowToken(), 0);
+    }
+    public void clearFocus (View view) {
+        View current = getCurrentFocus();
+        if (current != null) current.clearFocus();
+        hideSoftKeyboard(ItemEdit.this, view);
     }
 }

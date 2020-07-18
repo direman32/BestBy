@@ -53,11 +53,11 @@ import javax.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView shopName;
-    ListView productsView;
-    FirebaseAuth fAuth;
-    FirebaseFirestore fStore;
-    String userID;
+    private TextView shopName;
+    private ListView productsView;
+    private FirebaseAuth fAuth;
+    private FirebaseFirestore fStore;
+    private String userID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,8 +136,9 @@ public class MainActivity extends AppCompatActivity {
 
         myListOfDocuments = SortByDate(myListOfDocuments);
         for(int i = 0; i < myListOfDocuments.size(); i++) {
-            documentDetails.add(String.format("%-17s %s", myListOfDocuments.get(i).get("product").toString().trim(),
-                    myListOfDocuments.get(i).get("expiryDateDisplay").toString().trim()));
+            documentDetails.add(String.format("%-17s %s",
+                    myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
+                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
         }
         productsView.setAdapter(arrayAdapter);
 
@@ -159,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<Date> dates = new ArrayList<>();
         for(int i = 0; i < myListOfDocuments.size(); i++) {
             try {
-                dates.add(format.parse((String) myListOfDocuments.get(i).get("expiryDateDisplay")));
+                dates.add(format.parse((String) myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY)));
             } catch (ParseException e) {
                 e.printStackTrace();
             }

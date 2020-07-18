@@ -25,9 +25,9 @@ import java.util.List;
 
 public class RemovedProducts extends AppCompatActivity {
 
-    FirebaseAuth fAuth;
-    ListView removedProductsView;
-    String userID;
+    private FirebaseAuth fAuth;
+    private ListView removedProductsView;
+    private String userID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,9 +70,9 @@ public class RemovedProducts extends AppCompatActivity {
 
         myListOfDocuments = SortByDate(myListOfDocuments);
         for(int i = 0; i < myListOfDocuments.size(); i++) {
-            documentDetails.add(String.format("%s %s\n%s", myListOfDocuments.get(i).get("product").toString().trim(),
+            documentDetails.add(String.format("%s %s\n%s", myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
                     "x" + myListOfDocuments.get(i).get("numberRemoved").toString().trim(),
-                    myListOfDocuments.get(i).get("expiryDateDisplay").toString().trim()));
+                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
         }
         removedProductsView.setAdapter(arrayAdapter);
 
@@ -88,7 +88,7 @@ public class RemovedProducts extends AppCompatActivity {
         ArrayList<Date> dates = new ArrayList<>();
         for(int i = 0; i < myListOfDocuments.size(); i++) {
             try {
-                dates.add(format.parse((String) myListOfDocuments.get(i).get("expiryDateDisplay")));
+                dates.add(format.parse((String) myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY)));
             } catch (ParseException e) {
                 e.printStackTrace();
             }
