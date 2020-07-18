@@ -4,6 +4,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -63,44 +65,10 @@ public class ItemEdit extends AppCompatActivity {
                 });
     }
 
-    public void RemoveProduct(View view) {
-        final FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        db.collection("users/" + userID + "/products").document(documentID)
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    if (document.exists()) {
-                        Map<String, Object> map = document.getData();
-                        db.collection("users/" + userID +"/removedProducts")
-                                .add(map)
-                                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                                    @Override
-                                    public void onSuccess(DocumentReference documentReference) {
-                                        db.collection("users/" + userID + "/products").document(documentID)
-                                                .delete();
-                                        System.out.println("DocumentSnapshot added with ID: " + documentReference.getId());
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        System.out.println("Error adding document: "+ e.getMessage());
-                                    }
-                                });
-                    }
-                } else {
-                    Log.d("Document Ref", "get failed with ", task.getException());
-                }
-            }
-        });
-        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        intent.putExtra("RemovedItem", true);
-        startActivity(intent);
-        finish();
+    public void RemoveItemDialog(View view) {
+        RemoveItemDialog rid = new RemoveItemDialog(ItemEdit.this, userID, productPosition);
+        rid.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        rid.show();
     }
 
     //TODO Add to a java class so it is not a duplicate method. also in main activity
@@ -132,7 +100,7 @@ public class ItemEdit extends AppCompatActivity {
     }
 
 
-    /*@Override
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)  {
         if (Integer.parseInt(android.os.Build.VERSION.SDK) < 5
                 && keyCode == KeyEvent.KEYCODE_BACK
@@ -148,5 +116,5 @@ public class ItemEdit extends AppCompatActivity {
     public void onBackPressed() {
         Log.d("CDA", "onBackPressed Called");
         startActivity(new Intent(getApplicationContext(), MainActivity.class));
-    }*/
+    }
 }

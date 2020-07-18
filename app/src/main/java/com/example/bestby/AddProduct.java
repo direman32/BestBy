@@ -108,7 +108,7 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
 
         calendar.setTimeInMillis(timestamp);
         String date = DateFormat.format("dd-MM-yyyy", calendar).toString();
-        user.put("product", product.getText().toString());
+        user.put("product", product.getText().toString().trim());
         user.put("expiryDate", timestamp);
         user.put("expiryDateDisplay", date);
 

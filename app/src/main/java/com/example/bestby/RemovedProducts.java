@@ -70,7 +70,8 @@ public class RemovedProducts extends AppCompatActivity {
 
         myListOfDocuments = SortByDate(myListOfDocuments);
         for(int i = 0; i < myListOfDocuments.size(); i++) {
-            documentDetails.add(String.format("%-17s %s", myListOfDocuments.get(i).get("product").toString().trim(),
+            documentDetails.add(String.format("%s %s\n%s", myListOfDocuments.get(i).get("product").toString().trim(),
+                    "x" + myListOfDocuments.get(i).get("numberRemoved").toString().trim(),
                     myListOfDocuments.get(i).get("expiryDateDisplay").toString().trim()));
         }
         removedProductsView.setAdapter(arrayAdapter);

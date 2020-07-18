@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
                 shopName.setText(documentSnapshot.getString("Shop"));
             }
         });
+
         ShowProducts();
     }
 
@@ -147,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(getApplicationContext(), ItemEdit.class);
                 intent.putExtra("userID", userID);
                 intent.putExtra("productPosition", position);
+                finish();
                 startActivity(intent);
             }
         });
