@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -23,13 +24,18 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
 
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import static com.example.bestby.staticValues.REMOVED_PRODUCTS;
 
 public class RemoveItemDialog extends Dialog implements
         android.view.View.OnClickListener {
@@ -42,19 +48,22 @@ public class RemoveItemDialog extends Dialog implements
     private String userID;
     private int productPosition;
     private String documentID;
+    private FirebaseFirestore fStoreRef;
+    private TextView offlineList;
 
 
     public RemoveItemDialog() {
         super(new Activity());
     }
 
-    public RemoveItemDialog(Activity a, String userID, int productPosition) {
+    public RemoveItemDialog(Activity a, String userID, int productPosition, FirebaseFirestore fStore, TextView view) {
         super(a);
         // TODO Auto-generated constructor stub
         this.c = a;
-
+        fStoreRef = fStore;
         this.userID = userID;
         this.productPosition = productPosition;
+        offlineList = view;
         GetProductDetails();
     }
 
@@ -81,7 +90,11 @@ public class RemoveItemDialog extends Dialog implements
                     return;
                 }
                 RemoveProduct();
-                c.finish();
+                Intent intent = new Intent(c.getApplicationContext(), MainActivity.class);
+                //intent.putExtra(REMOVED_PRODUCTS, (Serializable) setUpRemovedProductList(fStoreRef));
+                //ItemEdit.finishActivity(c);
+                //c.startActivity(intent);
+
                 break;
             case R.id.btn_no:
                 dismiss();
@@ -92,8 +105,34 @@ public class RemoveItemDialog extends Dialog implements
         dismiss();
     }
 
+    private List<String> setUpRemovedProductList(FirebaseFirestore fStore) {
+        //Make Serialized
+        FirebaseFirestore.getInstance().collection("users/" + userID + "/removedProducts")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        StringBuilder documentDetails = new StringBuilder();
+                        if (task.isSuccessful()) {
+                            List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
+                            for(int i = 0; i < myListOfDocuments.size(); i++) {
+                                documentDetails.append(String.format("%s%s/>/>/>",
+                                        myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
+                                        myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
+                            }
+
+                            offlineList.setText(documentDetails);
+                        }
+                    }
+                });
+
+        String[] tempArray = offlineList.getText().toString().split(">/>/>");
+
+        return Arrays.asList(tempArray);
+    }
+
     public void GetProductDetails() {
-        FirebaseFirestore.getInstance()
+         fStoreRef
                 .collection("users/" + userID + "/products")
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
@@ -110,7 +149,8 @@ public class RemoveItemDialog extends Dialog implements
     }
 
     public void RemoveProduct() {
-        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final FirebaseFirestore db = fStoreRef;
+        final boolean[] failed = {false};
 
         db.collection("users/" + userID + "/products").document(documentID)
                 .get()
@@ -127,17 +167,30 @@ public class RemoveItemDialog extends Dialog implements
                                         .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                                             @Override
                                             public void onSuccess(DocumentReference documentReference) {
-                                                db.collection("users/" + userID + "/products").document(documentID)
-                                                        .delete();
                                                 System.out.println("DocumentSnapshot added with ID: " + documentReference.getId());
+                                                Toast.makeText(c, "Product Removed Successfully",
+                                                        Toast.LENGTH_SHORT).show();
                                             }
                                         })
                                         .addOnFailureListener(new OnFailureListener() {
                                             @Override
                                             public void onFailure(@NonNull Exception e) {
-                                                System.out.println("Error adding document: "+ e.getMessage());
+                                                Toast.makeText(c, "Could not remove product at this time",
+                                                        Toast.LENGTH_SHORT).show();
+                                                failed[0] = true;
                                             }
-                                        });
+                                        })
+                                    .addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<DocumentReference> task) {
+                                            if(!failed[0]) {
+                                                db.collection("users/" + userID + "/products").document(documentID)
+                                                        .delete();
+                                            }
+                                            Toast.makeText(c, "Added to removed Products",
+                                                    Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
                             }
                         } else {
                             Log.d("Document Ref", "get failed with ", task.getException());

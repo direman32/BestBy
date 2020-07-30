@@ -29,12 +29,16 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.example.bestby.staticValues.UPDATER;
+import static com.example.bestby.staticValues.USER_ID;
+
 public class AddProduct extends AppCompatActivity implements DatePickerDialog.OnDateSetListener {
 
     private TextView product;
     private TextView dateText;
     private DatePickerDialog dialog;
     private String userID;
+    private Updater updateHandler;
 
 
     @Override
@@ -45,7 +49,8 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
         product = findViewById(R.id.NameOfProduct);
 
         Intent intent = getIntent();
-        userID = intent.getStringExtra("userID");
+        userID = intent.getStringExtra(USER_ID);
+        updateHandler = (Updater) intent.getSerializableExtra(UPDATER);
     }
 
     public void ChooseDate(View view) {
@@ -93,6 +98,8 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
     }
 
     public void AddProductToDataBaseSuccessful() {
+        final boolean[] failed = {false};
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         Map<String, Object> user = new HashMap<>();
         int day =  dialog.getDatePicker().getDayOfMonth();
@@ -127,13 +134,33 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        System.out.println("Error adding document: "+ e.getMessage());
+                        Toast.makeText(AddProduct.this, "Could not add product at this time",
+                                Toast.LENGTH_SHORT).show();
+                        failed[0] = true;
                     }
                 });
 
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        intent = failureForUpdate(intent, failed[0], user);
         startActivity(intent);
         finish();
+    }
+
+    private Intent failureForUpdate(Intent intent, boolean failed, Map<String, Object> userDetails) {
+        if(failed) {
+            if(updateHandler != null) {
+                updateHandler.addNewProduct(userDetails);
+                intent.putExtra(UPDATER, updateHandler);
+            }
+            else {
+                Updater updater =new Updater(userID);
+                updateHandler.addNewProduct(userDetails);
+                intent.putExtra(UPDATER, updater);
+            }
+            return intent;
+        }
+        else
+            return intent;
     }
 
     public static void hideSoftKeyboard (Activity activity, View view)

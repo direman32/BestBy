@@ -51,6 +51,10 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import static com.example.bestby.staticValues.REMOVED_PRODUCTS;
+import static com.example.bestby.staticValues.UPDATER;
+import static com.example.bestby.staticValues.USER_ID;
+
 public class MainActivity extends AppCompatActivity {
 
     private TextView shopName;
@@ -58,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth fAuth;
     private FirebaseFirestore fStore;
     private String userID;
+    private Updater updateHandler;
+    private List<String> removedProducts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        updateHandler = (Updater) getIntent().getSerializableExtra("updater");
+        removedProducts = (List<String>) getIntent().getSerializableExtra(REMOVED_PRODUCTS);
+
         ShowProducts();
     }
 
@@ -90,17 +99,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void AddProduct(View view) {
+        if(updateHandler != null)
+            updateHandler.UpdateNewProducts();
         Intent intent = new Intent(getApplicationContext(), AddProduct.class);
-        intent.putExtra("userID",userID);
-        startActivity(intent);
+        intent.putExtra(USER_ID,userID);
+        intent.putExtra(UPDATER,updateHandler);
         //finish();
+        startActivity(intent);
     }
 
     public void RemovedProductsPage(View view) {
         Intent intent = new Intent(getApplicationContext(), RemovedProducts.class);
-        intent.putExtra("userID",userID);
-        startActivity(intent);
+        intent.putExtra(USER_ID,userID);
         //finish();
+        startActivity(intent);
     }
 
     public void WriteProduct(String Product) {
@@ -136,9 +148,16 @@ public class MainActivity extends AppCompatActivity {
 
         myListOfDocuments = SortByDate(myListOfDocuments);
         for(int i = 0; i < myListOfDocuments.size(); i++) {
-            documentDetails.add(String.format("%-17s %s",
+            String formattedText = String.format("%-17s %s",
                     myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
-                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
+                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim());
+//            if(removedProducts != null) {
+//                if (!removedProductsCheck(formattedText)) {
+//                    documentDetails.add(formattedText);
+//                }
+//            }
+//            else
+                documentDetails.add(formattedText);
         }
         productsView.setAdapter(arrayAdapter);
 
@@ -149,10 +168,20 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(getApplicationContext(), ItemEdit.class);
                 intent.putExtra("userID", userID);
                 intent.putExtra("productPosition", position);
-                finish();
+                //finish();
                 startActivity(intent);
             }
         });
+    }
+
+    //TODO If coming back from removedProductsPage
+    private boolean removedProductsCheck(String dataCheck) {
+        for(String displayText: removedProducts) {
+            if(displayText.equals(dataCheck)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<DocumentSnapshot> SortByDate(List<DocumentSnapshot> myListOfDocuments) {

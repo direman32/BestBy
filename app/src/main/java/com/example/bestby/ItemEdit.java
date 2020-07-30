@@ -2,11 +2,11 @@ package com.example.bestby;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -14,7 +14,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.DatePicker;
 import android.widget.EditText;
@@ -30,15 +29,17 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import static com.example.bestby.staticValues.REMOVED_PRODUCTS;
 
 public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
 
@@ -47,11 +48,13 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
     private String documentID;
     private EditText productName;
     private TextView dateText;
+    private TextView offlineList;
     private String originalName;
     private String originalDate;
     private long originalTimeStamp;
     private long newTimeStamp;
     private Calendar calendar;
+    private FirebaseFirestore fStoreRef;
     private String newDateDisplay;
 
     @Override
@@ -59,8 +62,10 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_item_edit);
 
+        fStoreRef = FirebaseFirestore.getInstance();
         productName = findViewById(R.id.editProductName);
         dateText = findViewById(R.id.editDate);
+        offlineList = findViewById(R.id.offlineList);
         productName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
@@ -112,9 +117,20 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
 
     public void RemoveItemDialog(View view) {
         clearFocus(view);
-        RemoveItemDialog rid = new RemoveItemDialog(ItemEdit.this, userID, productPosition);
+        RemoveItemDialog rid = new RemoveItemDialog(ItemEdit.this, userID, productPosition, fStoreRef, offlineList);
         rid.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         rid.show();
+        rid.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(final DialogInterface arg0) {
+                finish();
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            }
+        });
+    }
+
+    public static void finishActivity(Activity item) {
+        item.finish();
     }
 
     public void Update(View view) {
@@ -128,7 +144,8 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                 newDateDisplay = originalDate;
                 newTimeStamp = originalTimeStamp;
             }
-            DocumentReference contact = FirebaseFirestore.getInstance().collection("users/" + userID + "/products").document(documentID);
+            final FirebaseFirestore fStore = fStoreRef;
+            final DocumentReference contact = fStore.collection("users/" + userID + "/products").document(documentID);
             contact.update(staticValues.PRODUCT_NAME_KEY, productName.getText().toString().trim());
             contact.update(staticValues.PRODUCT_DATE_KEY, newTimeStamp);
             contact.update(staticValues.PRODUCT_DATE_DISPLAY_KEY, newDateDisplay)
@@ -137,11 +154,48 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                         public void onSuccess(Void aVoid) {
                             Toast.makeText(ItemEdit.this, "Updated Successfully",
                                     Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                            intent.putExtra(REMOVED_PRODUCTS, (Serializable) setUpRemovedProductList(fStore));
                             finish();
-                            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                            startActivity(intent);
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Toast.makeText(ItemEdit.this, "Could Not Update",
+                                    Toast.LENGTH_SHORT).show();
                         }
                     });
+            fStoreRef = fStore;
         }
+    }
+
+    //TODO give access to removeItemDialog
+    private List<String> setUpRemovedProductList(FirebaseFirestore fStore) {
+        //Make Serialized
+        fStore.collection("users/" + userID + "/products")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        StringBuilder documentDetails = new StringBuilder();
+                        if (task.isSuccessful()) {
+                            List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
+                            for(int i = 0; i < myListOfDocuments.size(); i++) {
+                                documentDetails.append(String.format("%-17s %s",
+                                        myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
+                                        myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
+                            }
+
+                            offlineList.setText(documentDetails);
+                        }
+                    }
+                });
+
+        String[] tempArray = offlineList.getText().toString().split(">/>/>");
+
+        return Arrays.asList(tempArray);
     }
 
     //TODO Add to a java class so it is not a duplicate method. also in main activity
