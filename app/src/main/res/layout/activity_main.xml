@@ -7,6 +7,7 @@
     android:background="@drawable/gradient_background"
     tools:context=".MainActivity">
 
+
     <Button
         android:id="@+id/Logout"
         android:layout_width="wrap_content"
@@ -88,4 +89,14 @@
         app:layout_constraintEnd_toEndOf="@+id/productsView"
         app:layout_constraintStart_toEndOf="@+id/addNewItem"
         app:layout_constraintTop_toBottomOf="@+id/ShopName" />
+
+    <include
+        android:id="@+id/progressIconOverlayMain"
+        layout="@layout/progress_bar_overlay"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

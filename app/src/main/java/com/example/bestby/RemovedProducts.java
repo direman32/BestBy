@@ -28,6 +28,7 @@ public class RemovedProducts extends AppCompatActivity {
     private FirebaseAuth fAuth;
     private ListView removedProductsView;
     private String userID;
+    private View progressOverlay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +39,7 @@ public class RemovedProducts extends AppCompatActivity {
         removedProductsView = findViewById(R.id.removedProductsList);
         Intent intent = getIntent();
         userID = intent.getStringExtra("userID");
+        progressOverlay = findViewById(R.id.progressIconOverlayRemovedProducts);
         ShowProducts();
     }
 
@@ -81,6 +83,7 @@ public class RemovedProducts extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             }
         });
+        setInvisible();
     }
 
     public List<DocumentSnapshot> SortByDate(List<DocumentSnapshot> myListOfDocuments) {
@@ -108,5 +111,12 @@ public class RemovedProducts extends AppCompatActivity {
                     myListOfDocuments.set(j+1, tempDoc);
                 }
         return myListOfDocuments;
+    }
+
+    public void setInvisible() {
+        progressOverlay.setVisibility(View.INVISIBLE);
+    }
+    public void setVisible() {
+        progressOverlay.setVisibility(View.VISIBLE);
     }
 }

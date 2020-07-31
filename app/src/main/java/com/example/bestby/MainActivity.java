@@ -36,6 +36,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
     private String userID;
     private Updater updateHandler;
     private List<String> removedProducts;
+    private View progressOverlay;
+    private Button addProductButton;
+    private Button removedProductButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         shopName = findViewById(R.id.ShopName);
         productsView = findViewById(R.id.productsView);
+        progressOverlay = findViewById(R.id.progressIconOverlayMain);
+        addProductButton = findViewById(R.id.addNewItem);
+        removedProductButton = findViewById(R.id.button2);
 
         fAuth = FirebaseAuth.getInstance();
         fStore = FirebaseFirestore.getInstance();
@@ -89,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
         updateHandler = (Updater) getIntent().getSerializableExtra("updater");
         removedProducts = (List<String>) getIntent().getSerializableExtra(REMOVED_PRODUCTS);
 
+        setVisible();
         ShowProducts();
     }
 
@@ -172,6 +180,8 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        setInvisible();
     }
 
     //TODO If coming back from removedProductsPage
@@ -209,6 +219,17 @@ public class MainActivity extends AppCompatActivity {
                     myListOfDocuments.set(j+1, tempDoc);
                 }
         return myListOfDocuments;
+    }
+
+    public void setInvisible() {
+        progressOverlay.setVisibility(View.INVISIBLE);
+        addProductButton.setClickable(true);
+        removedProductButton.setClickable(true);
+    }
+    public void setVisible() {
+        progressOverlay.setVisibility(View.VISIBLE);
+        addProductButton.setClickable(false);
+        removedProductButton.setClickable(false);
     }
 
     @Override
