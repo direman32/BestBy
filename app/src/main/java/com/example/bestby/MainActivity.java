@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(getApplicationContext(), ItemEdit.class);
                 intent.putExtra("userID", userID);
                 intent.putExtra("productPosition", position);
-                //finish();
+                finish();
                 startActivity(intent);
             }
         });

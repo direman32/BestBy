@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.example.bestby.staticValues.REMOVED_PRODUCTS;
+import static com.example.bestby.staticValues.USER_ID;
 
 public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
 
@@ -127,6 +128,14 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
             }
         });
+    }
+
+    public void RemoveItemPage(View view) {
+        Intent intent = new Intent(getApplicationContext(), RemoveProductPage.class);
+        intent.putExtra(USER_ID,userID);
+        intent.putExtra("documentID", documentID);
+        finish();
+        startActivity(intent);
     }
 
     public static void finishActivity(Activity item) {
