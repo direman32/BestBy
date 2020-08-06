@@ -7,4 +7,5 @@ public class staticValues {
     public static String REMOVED_PRODUCTS = "removedProducts";
     public static String USER_ID = "userID";
     public static String UPDATER = "updater";
+    public static int EXPIRY_DATE_NOTIFIER = 3;
 }

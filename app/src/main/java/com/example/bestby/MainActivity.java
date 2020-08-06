@@ -1,54 +1,37 @@
 package com.example.bestby;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.io.File;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -68,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private View progressOverlay;
     private Button addProductButton;
     private Button removedProductButton;
+    private long closestDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,29 +127,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void FillListView(List<DocumentSnapshot> myListOfDocuments) {
-        List<String> documentDetails = new ArrayList<>();
+        ArrayList<productViewMain> productViewMains = new ArrayList<>();
 
         // This is the array adapter, it takes the context of the activity as a
         // first parameter, the type of list view as a second parameter and your array as a third parameter.
-        ArrayAdapter<String> arrayAdapter;
-        arrayAdapter = new ArrayAdapter<>(
+        ArrayAdapter<productViewMain> arrayAdapter;
+        arrayAdapter = new MainCustomArrayAdpater(
                 this,
-                R.layout.list_item,
-                documentDetails);
+                R.layout.main_list_item,
+                productViewMains);
 
 
         myListOfDocuments = SortByDate(myListOfDocuments);
+        boolean closestSet = false;
         for(int i = 0; i < myListOfDocuments.size(); i++) {
-            String formattedText = String.format("%-17s %s",
+            boolean check = checkDate(myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_KEY).toString());
+            productViewMains.add(new productViewMain(
                     myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
-                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim());
-//            if(removedProducts != null) {
-//                if (!removedProductsCheck(formattedText)) {
-//                    documentDetails.add(formattedText);
-//                }
-//            }
-//            else
-                documentDetails.add(formattedText);
+                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim(),
+                    check));
+            if(!check && !closestSet) {
+                closestDate = Long.parseLong(myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_KEY).toString());
+                closestDate = closestDate + (1000 * 3600 * 12);
+                closestSet = true;
+                alarmSetup();
+            }
         }
         productsView.setAdapter(arrayAdapter);
 
@@ -182,6 +168,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setInvisible();
+    }
+
+    private boolean checkDate(String date) {
+        Long expiryDate = Long.parseLong(date);
+        Calendar expiryCal = Calendar.getInstance();
+        expiryCal.setTimeInMillis(expiryDate);
+
+        Calendar nowCal = Calendar.getInstance();
+        nowCal.setTimeInMillis(System.currentTimeMillis());
+        nowCal.add(Calendar.DAY_OF_MONTH, staticValues.EXPIRY_DATE_NOTIFIER);
+
+        return expiryCal.before(nowCal);
     }
 
     //TODO If coming back from removedProductsPage
@@ -219,6 +217,20 @@ public class MainActivity extends AppCompatActivity {
                     myListOfDocuments.set(j+1, tempDoc);
                 }
         return myListOfDocuments;
+    }
+
+
+    private void alarmSetup() {
+        Intent intent = new Intent(MainActivity.this, BroadcastManager.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this,0,intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        alarmManager.cancel(pendingIntent);
+
+
+        alarmManager.set(AlarmManager.RTC_WAKEUP,
+                closestDate,
+                pendingIntent);
     }
 
     public void setInvisible() {
