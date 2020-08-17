@@ -1,3 +1,6 @@
+include ':poi-ooxml-schemas-3.15'
+include ':poi-ooxml-3.15'
+include ':poi-3.15'
 include ':api-common-java-master'
 include ':app'
 rootProject.name = "BestBy"
