@@ -7,10 +7,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -51,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private View progressOverlay;
     private Button addProductButton;
     private Button removedProductButton;
+    private SearchView productSearch;
     private long closestDate;
 
     @Override
@@ -63,6 +68,25 @@ public class MainActivity extends AppCompatActivity {
         progressOverlay = findViewById(R.id.progressIconOverlayMain);
         addProductButton = findViewById(R.id.addNewItem);
         removedProductButton = findViewById(R.id.button2);
+        productSearch = findViewById(R.id.productSearch);
+
+        productSearch.setIconifiedByDefault(false);
+        productSearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // do something on text submit
+                ShowProducts(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                // do something when text changes
+                if(newText.equals(""))
+                    ShowProducts(newText);
+                return false;
+            }
+        });
 
         fAuth = FirebaseAuth.getInstance();
         fStore = FirebaseFirestore.getInstance();
@@ -81,7 +105,8 @@ public class MainActivity extends AppCompatActivity {
         removedProducts = (List<String>) getIntent().getSerializableExtra(REMOVED_PRODUCTS);
 
         setVisible();
-        ShowProducts();
+        ShowProducts("");
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
     }
 
     public void LogOut(View view) {
@@ -111,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
         getFilesDir();
     }
 
-    public void ShowProducts() {
+    public void ShowProducts(final String query) {
         FirebaseFirestore.getInstance()
                 .collection("users/" + userID + "/products")
                 .get()
@@ -120,13 +145,13 @@ public class MainActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
                             List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
-                            FillListView(myListOfDocuments);
+                            FillListView(myListOfDocuments, query);
                         }
                     }
                 });
     }
 
-    public void FillListView(List<DocumentSnapshot> myListOfDocuments) {
+    public void FillListView(List<DocumentSnapshot> myListOfDocuments, String query) {
         ArrayList<productViewMain> productViewMains = new ArrayList<>();
 
         // This is the array adapter, it takes the context of the activity as a
@@ -142,15 +167,17 @@ public class MainActivity extends AppCompatActivity {
         boolean closestSet = false;
         for(int i = 0; i < myListOfDocuments.size(); i++) {
             boolean check = checkDate(myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_KEY).toString());
-            productViewMains.add(new productViewMain(
-                    myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
-                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim(),
-                    check));
-            if(!check && !closestSet) {
-                closestDate = Long.parseLong(myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_KEY).toString());
-                closestDate = closestDate + (1000 * 3600 * 12);
-                closestSet = true;
-                alarmSetup();
+            if(searchCheck(query,  myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim())) {
+                productViewMains.add(new productViewMain(
+                        myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
+                        myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim(),
+                        check));
+                if (!check && !closestSet) {
+                    closestDate = Long.parseLong(myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_KEY).toString());
+                    closestDate = closestDate + (1000 * 3600 * 12);
+                    closestSet = true;
+                    alarmSetup();
+                }
             }
         }
         productsView.setAdapter(arrayAdapter);
@@ -168,6 +195,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setInvisible();
+    }
+
+    private boolean searchCheck(String query, String productName) {
+        String[] querySplit = query.split(" ");
+        for(String queryPart: querySplit) {
+            if(!productName.toLowerCase().contains(queryPart.toLowerCase()))
+                return false;
+        }
+        return true;
     }
 
     private boolean checkDate(String date) {
