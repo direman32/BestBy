@@ -116,20 +116,6 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                 });
     }
 
-    public void RemoveItemDialog(View view) {
-        clearFocus(view);
-        RemoveItemDialog rid = new RemoveItemDialog(ItemEdit.this, userID, productPosition, fStoreRef, offlineList);
-        rid.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        rid.show();
-        rid.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(final DialogInterface arg0) {
-                finish();
-                startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            }
-        });
-    }
-
     public void RemoveItemPage(View view) {
         Intent intent = new Intent(getApplicationContext(), RemoveProductPage.class);
         intent.putExtra(USER_ID,userID);

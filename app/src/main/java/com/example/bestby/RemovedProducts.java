@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -129,20 +131,19 @@ public class RemovedProducts extends AppCompatActivity {
         return myListOfDocuments;
     }
 
-
+    /**
+        Method used to create an excel file
+        Fills excel file with the data from removed products to be used for the weekly Livestock report
+     **/
     public void GenerateReport(View view) {
-//        startActivity(new Intent(getApplicationContext(), Excel.class));
         Workbook wb=new HSSFWorkbook();
-        Cell cell=null;
+        Cell cell;
         CellStyle cellStyle=wb.createCellStyle();
         cellStyle.setFillForegroundColor(HSSFColor.WHITE.index);
-        //cellStyle.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
         cellStyle.setAlignment(HorizontalAlignment.CENTER);
 
-        //Now we are creating sheet
-        Sheet sheet=null;
+        Sheet sheet;
         sheet = wb.createSheet("Removed Products");
-        //Now column and row
 
 
         myProducts = SortByDate(myProducts);
@@ -166,17 +167,33 @@ public class RemovedProducts extends AppCompatActivity {
         sheet.setColumnWidth(1, 2000);
         sheet.setColumnWidth(2, 3000);
 
-        File file = new File(getExternalFilesDir(null),"WeeklyReport.xls");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+        Date date = new Date();
+
+        File file = new File(getExternalFilesDir(null),"WeeklyReport " + formatter.format(date) + ".xls");
+        try {
+            file.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         FileOutputStream outputStream =null;
 
         try {
             outputStream=new FileOutputStream(file);
             wb.write(outputStream);
-            Toast.makeText(getApplicationContext(),"OK",Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(),"Report generated successfully",Toast.LENGTH_LONG).show();
+            deleteRemovedProducts();
+            Intent it = new Intent(Intent.ACTION_SEND);
+            it.putExtra(Intent.EXTRA_EMAIL, new String[]{"cathalf32@outlook.com"});
+            it.putExtra(Intent.EXTRA_SUBJECT,"Weekly Report");
+            it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            it.setType("application/excel");
+           // it.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
+            startActivity(Intent.createChooser(it,"Choose Mail App"));
         } catch (java.io.IOException e) {
             e.printStackTrace();
 
-            Toast.makeText(getApplicationContext(),"NO OK",Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(),"Could not generate file",Toast.LENGTH_LONG).show();
             try {
                 outputStream.close();
             } catch (IOException ex) {
@@ -185,7 +202,20 @@ public class RemovedProducts extends AppCompatActivity {
         }
     }
 
-
+    private void deleteRemovedProducts() {
+        removedProductsView.setAdapter(null);
+        FirebaseFirestore.getInstance().collection("users/" + userID +"/removedProducts").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                if (task.isSuccessful()) {
+                    List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
+                    for(DocumentSnapshot doc: myListOfDocuments) {
+                        doc.getReference().delete();
+                    }
+                }
+            }
+        });
+    }
 
     public void setInvisible() {
         progressOverlay.setVisibility(View.INVISIBLE);
