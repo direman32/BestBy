@@ -82,8 +82,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextChange(String newText) {
                 // do something when text changes
-                if(newText.equals(""))
+                if(newText.equals("")) {
                     ShowProducts(newText);
+                }
                 return false;
             }
         });

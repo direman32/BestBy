@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -46,6 +47,7 @@ public class RemovedProducts extends AppCompatActivity {
     private String userID;
     private View progressOverlay;
     private List<DocumentSnapshot> myProducts;
+    private TextView lastReport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +56,10 @@ public class RemovedProducts extends AppCompatActivity {
 
         fAuth = FirebaseAuth.getInstance();
         removedProductsView = findViewById(R.id.removedProductsList);
+        progressOverlay = findViewById(R.id.progressIconOverlayRemovedProducts);
+        lastReport = findViewById(R.id.lastReport);
         Intent intent = getIntent();
         userID = intent.getStringExtra("userID");
-        progressOverlay = findViewById(R.id.progressIconOverlayRemovedProducts);
         ShowProducts();
     }
 
@@ -88,19 +91,25 @@ public class RemovedProducts extends AppCompatActivity {
                 documentDetails);
 
 
-        myListOfDocuments = SortByDate(myListOfDocuments);
-        for(int i = 0; i < myListOfDocuments.size(); i++) {
-            documentDetails.add(String.format("%s %s\n%s", myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
-                    "x" + myListOfDocuments.get(i).get("numberRemoved").toString().trim(),
-                    myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
+        if(myListOfDocuments.size() == 0) {
+            lastReport.setText("No products to display\nLast report was generated on: ");
         }
-        removedProductsView.setAdapter(arrayAdapter);
-
-        removedProductsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        else {
+            myListOfDocuments = SortByDate(myListOfDocuments);
+            for (int i = 0; i < myListOfDocuments.size(); i++) {
+                documentDetails.add(String.format("%s %s\n%s", myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
+                        "x" + myListOfDocuments.get(i).get("numberRemoved").toString().trim(),
+                        myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
             }
-        });
+
+            removedProductsView.setAdapter(arrayAdapter);
+
+            removedProductsView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                }
+            });
+        }
         setInvisible();
     }
 
@@ -183,13 +192,15 @@ public class RemovedProducts extends AppCompatActivity {
             wb.write(outputStream);
             Toast.makeText(getApplicationContext(),"Report generated successfully",Toast.LENGTH_LONG).show();
             deleteRemovedProducts();
-            Intent it = new Intent(Intent.ACTION_SEND);
-            it.putExtra(Intent.EXTRA_EMAIL, new String[]{"cathalf32@outlook.com"});
-            it.putExtra(Intent.EXTRA_SUBJECT,"Weekly Report");
-            it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            it.setType("application/excel");
-           // it.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
-            startActivity(Intent.createChooser(it,"Choose Mail App"));
+            finish();
+//            Intent for opening gmail. (Needs SD card!!!)
+//            Intent it = new Intent(Intent.ACTION_SEND);
+//            it.putExtra(Intent.EXTRA_EMAIL, new String[]{"cathalf32@outlook.com"});
+//            it.putExtra(Intent.EXTRA_SUBJECT,"Weekly Report");
+//            it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//            it.setType("application/excel");
+//           // it.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
+//            startActivity(Intent.createChooser(it,"Choose Mail App"));
         } catch (java.io.IOException e) {
             e.printStackTrace();
 

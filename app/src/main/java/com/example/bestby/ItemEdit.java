@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -49,7 +50,6 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
     private String documentID;
     private EditText productName;
     private TextView dateText;
-    private TextView offlineList;
     private String originalName;
     private String originalDate;
     private long originalTimeStamp;
@@ -57,6 +57,7 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
     private Calendar calendar;
     private FirebaseFirestore fStoreRef;
     private String newDateDisplay;
+    private Button saveButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,15 +67,21 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
         fStoreRef = FirebaseFirestore.getInstance();
         productName = findViewById(R.id.editProductName);
         dateText = findViewById(R.id.editDate);
-        offlineList = findViewById(R.id.offlineList);
+        saveButton = findViewById(R.id.saveProduct);
         productName.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if(!hasFocus) {
-                    if(!productName.getText().toString().equals(originalName))
+                    if(!productName.getText().toString().equals(originalName)) {
                         productName.setTextColor(Color.RED);
-                    else
+                        saveButton.setClickable(true);
+                        saveButton.setVisibility(View.VISIBLE);
+                    }
+                    else {
                         productName.setTextColor(Color.BLACK);
+                        saveButton.setClickable(false);
+                        saveButton.setVisibility(View.INVISIBLE);
+                    }
                 }
             }
         });
@@ -85,6 +92,7 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                 if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
                     clearFocus(v);
                     handled = true;
+
                 }
                 return handled;
             }
@@ -109,7 +117,7 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                             productName.setText(myListOfDocuments.get(productPosition).getString(staticValues.PRODUCT_NAME_KEY));
                             originalName = productName.getText().toString();
                             originalDate = myListOfDocuments.get(productPosition).getString(staticValues.PRODUCT_DATE_DISPLAY_KEY);
-                            dateText.setText("Expiry Date: " + originalDate);
+                            dateText.setText(originalDate);
                             originalTimeStamp = myListOfDocuments.get(productPosition).getLong(staticValues.PRODUCT_DATE_KEY);
                         }
                     }
@@ -128,7 +136,7 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
         item.finish();
     }
 
-    public void Update(View view) {
+    public void SaveUpdate(View view) {
         clearFocus(view);
         if(productName.getText().toString().equals(originalName) && (originalDate.equals(newDateDisplay) || newDateDisplay == null)) {
             Toast.makeText(ItemEdit.this, "Nothing has been changed",
@@ -150,7 +158,6 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                             Toast.makeText(ItemEdit.this, "Updated Successfully",
                                     Toast.LENGTH_SHORT).show();
                             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                            intent.putExtra(REMOVED_PRODUCTS, (Serializable) setUpRemovedProductList(fStore));
                             finish();
                             startActivity(intent);
                         }
@@ -164,33 +171,6 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
                     });
             fStoreRef = fStore;
         }
-    }
-
-    //TODO give access to removeItemDialog
-    private List<String> setUpRemovedProductList(FirebaseFirestore fStore) {
-        //Make Serialized
-        fStore.collection("users/" + userID + "/products")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        StringBuilder documentDetails = new StringBuilder();
-                        if (task.isSuccessful()) {
-                            List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
-                            for(int i = 0; i < myListOfDocuments.size(); i++) {
-                                documentDetails.append(String.format("%-17s %s",
-                                        myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim(),
-                                        myListOfDocuments.get(i).get(staticValues.PRODUCT_DATE_DISPLAY_KEY).toString().trim()));
-                            }
-
-                            offlineList.setText(documentDetails);
-                        }
-                    }
-                });
-
-        String[] tempArray = offlineList.getText().toString().split(">/>/>");
-
-        return Arrays.asList(tempArray);
     }
 
     //TODO Add to a java class so it is not a duplicate method. also in main activity
@@ -227,11 +207,17 @@ public class ItemEdit extends AppCompatActivity implements DatePickerDialog.OnDa
             newDateDisplay= dayOfMonth + "-0" + (month + 1) + "-" + year;
         else
             newDateDisplay= dayOfMonth + "-" + (month + 1) + "-" + year;
-        String date = "Expiry Date: " + newDateDisplay;
-        if(!(newDateDisplay).equals(originalDate) && !newDateDisplay.equals(""))
+        String date = newDateDisplay;
+        if(!(newDateDisplay).equals(originalDate) && !newDateDisplay.equals("")) {
             dateText.setTextColor(Color.RED);
-        else
+            saveButton.setClickable(true);
+            saveButton.setVisibility(View.VISIBLE);
+        }
+        else {
             dateText.setTextColor(Color.BLACK);
+            saveButton.setClickable(false);
+            saveButton.setVisibility(View.INVISIBLE);
+        }
         dateText.setText(date);
         DateFormat format = new SimpleDateFormat("dd-mm-yyyy");
         try {

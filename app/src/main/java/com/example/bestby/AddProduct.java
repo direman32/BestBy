@@ -8,25 +8,32 @@ import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.format.DateFormat;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.DatePicker;
-import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.example.bestby.staticValues.UPDATER;
@@ -37,8 +44,10 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
     private TextView product;
     private TextView dateText;
     private DatePickerDialog dialog;
+    private ListView suggestedProducts;
     private String userID;
     private Updater updateHandler;
+    private boolean suggestedClicked;
 
 
     @Override
@@ -47,10 +56,85 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
         setContentView(R.layout.activity_add_product);
         dateText = findViewById(R.id.dateTextView);
         product = findViewById(R.id.NameOfProduct);
+        suggestedProducts = findViewById(R.id.suggestedAddProducts);
+        product.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if(suggestedClicked)
+                    return;
+                else
+                    ShowProducts(s.toString());
+            }
+        });
 
         Intent intent = getIntent();
         userID = intent.getStringExtra(USER_ID);
         updateHandler = (Updater) intent.getSerializableExtra(UPDATER);
+    }
+
+    public void ShowProducts(final String query) {
+        FirebaseFirestore.getInstance()
+                .collection("users/" + userID + "/products")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            List<DocumentSnapshot> myListOfDocuments = task.getResult().getDocuments();
+                            FillListView(myListOfDocuments, query);
+                        }
+                    }
+                });
+    }
+
+    public void FillListView(List<DocumentSnapshot> myListOfDocuments, String query) {
+        final ArrayList<suggestedProductView> suggestedProductViewList = new ArrayList<>();
+
+        // This is the array adapter, it takes the context of the activity as a
+        // first parameter, the type of list view as a second parameter and your array as a third parameter.
+        ArrayAdapter<suggestedProductView> arrayAdapter;
+        arrayAdapter = new SuggestedItemAdapter(
+                this,
+                R.layout.suggested_item,
+                suggestedProductViewList);
+
+        for(int i = 0; i < myListOfDocuments.size(); i++) {
+            if(searchCheck(query,  myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim())) {
+                suggestedProductViewList.add(new suggestedProductView(
+                        myListOfDocuments.get(i).get(staticValues.PRODUCT_NAME_KEY).toString().trim()));
+            }
+        }
+        suggestedProducts.setAdapter(arrayAdapter);
+
+        suggestedProducts.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                suggestedClicked = true;
+                product.setText(suggestedProductViewList.get(position).getName());
+                product.clearFocus();
+                suggestedProductViewList.clear();
+                suggestedProducts.setAdapter(null);
+            }
+        });
+    }
+
+    private boolean searchCheck(String query, String productName) {
+        String[] querySplit = query.split(" ");
+        for(String queryPart: querySplit) {
+            if(!productName.toLowerCase().contains(queryPart.toLowerCase()))
+                return false;
+        }
+        return true;
     }
 
     public void ChooseDate(View view) {
@@ -68,18 +152,6 @@ public class AddProduct extends AppCompatActivity implements DatePickerDialog.On
     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
         String date = "Expiry Date: " + dayOfMonth + "-" + (month + 1) + "-" + year;
         dateText.setText(date);
-    }
-
-    public static String convertDateFromString(String dateInMilliseconds,String dateFormat) {
-        return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
-    }
-
-    public static String convertDate(int dayOfMonth, int month, int year) {
-        return dayOfMonth + "/" + month + "/" + year;
-    }
-
-    public String GetExpiryDate() {
-        return dateText.getText().toString();
     }
 
     public void addProductChecks(View view) {
